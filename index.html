@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Räuber-Beute-Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-card {
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .stat-card.rabbits {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+        
+        .stat-card.lynx {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+        
+        .icon {
+            font-size: 35px;
+        }
+        
+        .stat-info h3 {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        
+        .stat-info .number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .chart-container {
+            position: relative;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            height: 320px;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .reset-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+        
+        .info-btn {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+        
+        .info-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 233, 123, 0.4);
+        }
+        
+        .pause-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .pause-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .year-display {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .modal-content h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+        
+        .modal-content h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .modal-content p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .modal-content ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .modal-content li {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 5px;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #f5576c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            background: #d43f52;
+            transform: rotate(90deg);
+        }
+        
+        .quiz-btn {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+        
+        .quiz-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(250, 112, 154, 0.4);
+        }
+        
+        .quiz-question {
+            margin-bottom: 20px;
+        }
+        
+        .quiz-question h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .quiz-option {
+            padding: 12px 15px;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-option:hover {
+            background: #e0e0e0;
+        }
+        
+        .quiz-option.selected {
+            border-color: #667eea;
+            background: #e8eaff;
+        }
+        
+        .quiz-option.correct {
+            border-color: #43e97b;
+            background: #d4f4dd;
+        }
+        
+        .quiz-option.incorrect {
+            border-color: #f5576c;
+            background: #ffe0e3;
+        }
+        
+        .quiz-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .quiz-result.show {
+            display: block;
+        }
+        
+        .quiz-result.success {
+            background: #d4f4dd;
+            color: #2d5016;
+        }
+        
+        .quiz-result.partial {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .quiz-result.fail {
+            background: #ffe0e3;
+            color: #721c24;
+        }
+        
+        .quiz-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .check-btn, .retry-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .check-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .check-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .retry-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            display: none;
+        }
+        
+        .retry-btn.show {
+            display: block;
+        }
+        
+        .retry-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐰 Räuber-Beute-Simulation 🐱</h1>
+        
+        <div class="stats">
+            <div class="stat-card rabbits">
+                <div class="icon">🐰</div>
+                <div class="stat-info">
+                    <h3>Hasen</h3>
+                    <div class="number" id="rabbitCount">100</div>
+                </div>
+            </div>
+            <div class="stat-card lynx">
+                <div class="icon">🐱</div>
+                <div class="stat-info">
+                    <h3>Luchse</h3>
+                    <div class="number" id="lynxCount">20</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="year-display">
+            Jahr: <span id="yearDisplay">0</span> / 50
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+        
+        <div class="controls">
+            <button class="start-btn" id="startBtn">Simulation starten</button>
+            <button class="pause-btn" id="pauseBtn">Pause</button>
+            <button class="reset-btn" id="resetBtn">Zurücksetzen</button>
+            <button class="info-btn" id="infoBtn">Info</button>
+            <button class="quiz-btn" id="quizBtn">Quiz</button>
+        </div>
+    </div>
+
+    <div class="modal" id="infoModal">
+        <div class="modal-content">
+            <button class="close-modal" id="closeModal">×</button>
+            <h2>📊 Über diese Simulation</h2>
+            
+            <h3>Lotka-Volterra-Modell</h3>
+            <p>Diese Simulation basiert auf dem <strong>Lotka-Volterra-Modell</strong>, einem mathematischen Modell zur Beschreibung der Dynamik von Räuber-Beute-Beziehungen in der Natur.</p>
+            
+            <h3>Wie funktioniert es?</h3>
+            <p>Die Simulation zeigt das Zusammenspiel zwischen Hasen (Beute) und Luchsen (Räuber):</p>
+            <ul>
+                <li><strong>Viele Hasen</strong> → Mehr Nahrung für Luchse → Luchspopulation wächst</li>
+                <li><strong>Viele Luchse</strong> → Mehr Hasen werden gejagt → Hasenpopulation sinkt</li>
+                <li><strong>Wenige Hasen</strong> → Weniger Nahrung für Luchse → Luchspopulation sinkt</li>
+                <li><strong>Wenige Luchse</strong> → Weniger Jagddruck → Hasenpopulation erholt sich</li>
+            </ul>
+            
+            <h3>Zyklisches Verhalten</h3>
+            <p>Die Populationen schwanken in <strong>wellenförmigen Zyklen</strong>. Die Luchskurve folgt der Hasenkurve mit einer zeitlichen Verzögerung. Dieses Muster ist in der Natur bei vielen Räuber-Beute-Beziehungen zu beobachten.</p>
+            
+            <h3>Simulationsparameter</h3>
+            <ul>
+                <li>Zeitraum: 50 Jahre</li>
+                <li>Startpopulation: 100 Hasen, 20 Luchse</li>
+                <li>Berechnung: Monatliche Schritte</li>
+            </ul>
+            
+            <p><em>Entwickelt von Alfred J. Lotka (1925) und Vito Volterra (1926)</em></p>
+        </div>
+    </div>
+
+    <div class="modal" id="quizModal">
+        <div class="modal-content">
+            <button class="close-modal" id="closeQuiz">×</button>
+            <h2>🎯 Quiz zur Simulation</h2>
+            
+            <div class="quiz-question">
+                <h3>1. Was passiert, wenn die Hasenpopulation stark ansteigt?</h3>
+                <div class="quiz-options" data-question="1">
+                    <div class="quiz-option" data-answer="wrong">Die Luchspopulation sinkt sofort</div>
+                    <div class="quiz-option" data-answer="correct">Die Luchspopulation steigt mit Verzögerung</div>
+                    <div class="quiz-option" data-answer="wrong">Die Hasenpopulation sinkt sofort wieder</div>
+                    <div class="quiz-option" data-answer="wrong">Nichts verändert sich</div>
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <h3>2. Warum sinkt die Hasenpopulation, nachdem viele Luchse da sind?</h3>
+                <div class="quiz-options" data-question="2">
+                    <div class="quiz-option" data-answer="wrong">Wegen Nahrungsmangel bei den Hasen</div>
+                    <div class="quiz-option" data-answer="correct">Weil mehr Luchse mehr Hasen jagen</div>
+                    <div class="quiz-option" data-answer="wrong">Weil die Hasen auswandern</div>
+                    <div class="quiz-option" data-answer="wrong">Wegen Krankheiten</div>
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <h3>3. Welche Kurve erreicht ihren Höhepunkt zuerst?</h3>
+                <div class="quiz-options" data-question="3">
+                    <div class="quiz-option" data-answer="correct">Die Hasenkurve (rosa)</div>
+                    <div class="quiz-option" data-answer="wrong">Die Luchskurve (orange)</div>
+                    <div class="quiz-option" data-answer="wrong">Beide gleichzeitig</div>
+                    <div class="quiz-option" data-answer="wrong">Das ist zufällig</div>
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <h3>4. Was beschreibt das Lotka-Volterra-Modell?</h3>
+                <div class="quiz-options" data-question="4">
+                    <div class="quiz-option" data-answer="wrong">Das Wachstum einer einzelnen Population</div>
+                    <div class="quiz-option" data-answer="correct">Die Dynamik zwischen Räuber und Beute</div>
+                    <div class="quiz-option" data-answer="wrong">Die Verbreitung von Krankheiten</div>
+                    <div class="quiz-option" data-answer="wrong">Das Wetter in verschiedenen Jahreszeiten</div>
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <h3>5. Warum schwanken die Populationen in Wellen?</h3>
+                <div class="quiz-options" data-question="5">
+                    <div class="quiz-option" data-answer="wrong">Wegen der Jahreszeiten</div>
+                    <div class="quiz-option" data-answer="correct">Wegen der wechselseitigen Abhängigkeit von Räuber und Beute</div>
+                    <div class="quiz-option" data-answer="wrong">Wegen zufälliger Ereignisse</div>
+                    <div class="quiz-option" data-answer="wrong">Wegen menschlicher Eingriffe</div>
+                </div>
+            </div>
+
+            <div class="quiz-result" id="quizResult"></div>
+
+            <div class="quiz-buttons">
+                <button class="check-btn" id="checkQuiz">Antworten prüfen</button>
+                <button class="retry-btn" id="retryQuiz">Erneut versuchen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        const rabbitCountEl = document.getElementById('rabbitCount');
+        const lynxCountEl = document.getElementById('lynxCount');
+        const yearDisplayEl = document.getElementById('yearDisplay');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const infoBtn = document.getElementById('infoBtn');
+        const infoModal = document.getElementById('infoModal');
+        const closeModal = document.getElementById('closeModal');
+        const quizBtn = document.getElementById('quizBtn');
+        const quizModal = document.getElementById('quizModal');
+        const closeQuiz = document.getElementById('closeQuiz');
+        const checkQuiz = document.getElementById('checkQuiz');
+        const retryQuiz = document.getElementById('retryQuiz');
+        const quizResult = document.getElementById('quizResult');
+
+        // Simulation Parameter
+        let rabbits = 100;
+        let lynx = 20;
+        let year = 0;
+        const maxYears = 50;
+        const stepsPerYear = 12; // Monatliche Berechnungen
+        let currentStep = 0;
+        
+        // Lotka-Volterra Parameter
+        const rabbitGrowth = 0.05;      // Wachstumsrate Hasen
+        const predationRate = 0.001;    // Jagdrate der Luchse
+        const lynxGrowth = 0.0002;      // Umwandlung Beute zu Luchse
+        const lynxDeath = 0.03;         // Sterberate Luchse
+        
+        // Daten für Diagramm
+        let rabbitData = [rabbits];
+        let lynxData = [lynx];
+        let yearLabels = [0];
+        
+        let isRunning = false;
+        let animationId = null;
+
+        // Canvas Größe setzen
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            drawChart();
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Simulation Step (Lotka-Volterra Gleichungen)
+        function simulationStep() {
+            const dRabbits = rabbitGrowth * rabbits - predationRate * rabbits * lynx;
+            const dLynx = lynxGrowth * rabbits * lynx - lynxDeath * lynx;
+            
+            rabbits += dRabbits;
+            lynx += dLynx;
+            
+            // Verhindere negative Werte
+            rabbits = Math.max(0, rabbits);
+            lynx = Math.max(0, lynx);
+            
+            currentStep++;
+            
+            // Jedes Jahr Daten speichern
+            if (currentStep % stepsPerYear === 0) {
+                year++;
+                rabbitData.push(Math.round(rabbits));
+                lynxData.push(Math.round(lynx));
+                yearLabels.push(year);
+                
+                yearDisplayEl.textContent = year;
+            }
+            
+            // Anzeige aktualisieren
+            rabbitCountEl.textContent = Math.round(rabbits);
+            lynxCountEl.textContent = Math.round(lynx);
+            
+            drawChart();
+            
+            if (year < maxYears && rabbits > 0 && lynx > 0) {
+                animationId = setTimeout(simulationStep, 50);
+            } else {
+                isRunning = false;
+                startBtn.textContent = 'Neustart';
+            }
+        }
+
+        // Diagramm zeichnen
+        function drawChart() {
+            const padding = 60;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Hintergrund
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (rabbitData.length < 2) return;
+            
+            // Maximalwerte finden
+            const maxRabbits = Math.max(...rabbitData);
+            const maxLynx = Math.max(...lynxData);
+            const maxValue = Math.max(maxRabbits, maxLynx);
+            
+            // Achsen zeichnen
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+            
+            // Y-Achse Beschriftung
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.save();
+            ctx.translate(20, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Anzahl der Tiere', 0, 0);
+            ctx.restore();
+            
+            // X-Achse Beschriftung
+            ctx.textAlign = 'center';
+            ctx.fillText('Zeit in Jahren', canvas.width / 2, canvas.height - 20);
+            
+            // Y-Achse Skalierung
+            ctx.textAlign = 'right';
+            ctx.font = '12px Arial';
+            for (let i = 0; i <= 5; i++) {
+                const y = canvas.height - padding - (height / 5) * i;
+                const value = Math.round((maxValue / 5) * i);
+                ctx.fillText(value, padding - 10, y + 5);
+                
+                // Gitterlinien
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvas.width - padding, y);
+                ctx.stroke();
+            }
+            
+            // X-Achse Skalierung
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= maxYears; i += 10) {
+                const x = padding + (width / maxYears) * i;
+                ctx.fillText(i, x, canvas.height - padding + 20);
+            }
+            
+            // Hasen-Linie zeichnen
+            ctx.strokeStyle = '#ff69b4';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < rabbitData.length; i++) {
+                const x = padding + (width / maxYears) * yearLabels[i];
+                const y = canvas.height - padding - (rabbitData[i] / maxValue) * height;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Luchse-Linie zeichnen
+            ctx.strokeStyle = '#ff8c00';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < lynxData.length; i++) {
+                const x = padding + (width / maxYears) * yearLabels[i];
+                const y = canvas.height - padding - (lynxData[i] / maxValue) * height;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Legende
+            ctx.font = 'bold 14px Arial';
+            ctx.fillStyle = '#ff69b4';
+            ctx.textAlign = 'left';
+            ctx.fillText('🐰 Hasen', canvas.width - padding - 100, 30);
+            ctx.fillStyle = '#ff8c00';
+            ctx.fillText('🐱 Luchse', canvas.width - padding - 100, 50);
+        }
+
+        // Event Listener
+        startBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                if (year >= maxYears) {
+                    reset();
+                }
+                isRunning = true;
+                startBtn.textContent = 'Läuft...';
+                simulationStep();
+            }
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if (isRunning) {
+                isRunning = false;
+                clearTimeout(animationId);
+                startBtn.textContent = 'Fortsetzen';
+            }
+        });
+
+        resetBtn.addEventListener('click', reset);
+
+        infoBtn.addEventListener('click', () => {
+            infoModal.classList.add('active');
+        });
+
+        closeModal.addEventListener('click', () => {
+            infoModal.classList.remove('active');
+        });
+
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) {
+                infoModal.classList.remove('active');
+            }
+        });
+
+        // Quiz Funktionalität
+        quizBtn.addEventListener('click', () => {
+            quizModal.classList.add('active');
+        });
+
+        closeQuiz.addEventListener('click', () => {
+            quizModal.classList.remove('active');
+        });
+
+        quizModal.addEventListener('click', (e) => {
+            if (e.target === quizModal) {
+                quizModal.classList.remove('active');
+            }
+        });
+
+        // Quiz-Optionen auswählbar machen
+        document.querySelectorAll('.quiz-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const question = this.parentElement.dataset.question;
+                document.querySelectorAll(`[data-question="${question}"] .quiz-option`).forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+
+        // Quiz auswerten
+        checkQuiz.addEventListener('click', () => {
+            let correct = 0;
+            let total = 5;
+            let allAnswered = true;
+
+            document.querySelectorAll('.quiz-options').forEach(questionDiv => {
+                const selected = questionDiv.querySelector('.quiz-option.selected');
+                
+                if (!selected) {
+                    allAnswered = false;
+                    return;
+                }
+
+                const isCorrect = selected.dataset.answer === 'correct';
+                
+                if (isCorrect) {
+                    selected.classList.add('correct');
+                    correct++;
+                } else {
+                    selected.classList.add('incorrect');
+                    // Zeige auch die richtige Antwort
+                    questionDiv.querySelector('[data-answer="correct"]').classList.add('correct');
+                }
+            });
+
+            if (!allAnswered) {
+                quizResult.textContent = 'Bitte beantworte alle Fragen!';
+                quizResult.className = 'quiz-result show fail';
+                return;
+            }
+
+            // Ergebnis anzeigen
+            const percentage = (correct / total) * 100;
+            let resultClass = 'fail';
+            let resultText = '';
+
+            if (percentage === 100) {
+                resultClass = 'success';
+                resultText = `🎉 Perfekt! ${correct} von ${total} richtig! Du hast das Lotka-Volterra-Modell verstanden!`;
+            } else if (percentage >= 60) {
+                resultClass = 'partial';
+                resultText = `👍 Gut gemacht! ${correct} von ${total} richtig. Schau dir die falschen Antworten nochmal an.`;
+            } else {
+                resultClass = 'fail';
+                resultText = `📚 ${correct} von ${total} richtig. Schau dir die Simulation nochmal genau an und versuche es erneut!`;
+            }
+
+            quizResult.textContent = resultText;
+            quizResult.className = `quiz-result show ${resultClass}`;
+            
+            checkQuiz.style.display = 'none';
+            retryQuiz.classList.add('show');
+        });
+
+        // Quiz zurücksetzen
+        retryQuiz.addEventListener('click', () => {
+            document.querySelectorAll('.quiz-option').forEach(option => {
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+            quizResult.classList.remove('show');
+            checkQuiz.style.display = 'block';
+            retryQuiz.classList.remove('show');
+        });
+
+        function reset() {
+            isRunning = false;
+            clearTimeout(animationId);
+            
+            rabbits = 100;
+            lynx = 20;
+            year = 0;
+            currentStep = 0;
+            
+            rabbitData = [rabbits];
+            lynxData = [lynx];
+            yearLabels = [0];
+            
+            rabbitCountEl.textContent = rabbits;
+            lynxCountEl.textContent = lynx;
+            yearDisplayEl.textContent = year;
+            startBtn.textContent = 'Simulation starten';
+            
+            drawChart();
+        }
+
+        // Initialer Draw
+        drawChart();
+    </script>
+</body>
+</html>
